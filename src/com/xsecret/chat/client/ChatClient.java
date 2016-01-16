@@ -15,6 +15,8 @@
  */
 package com.xsecret.chat.client;
 
+import com.xsecret.chat.model.BaseMsg;
+import com.xsecret.chat.model.MsgType;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -25,15 +27,16 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
-import java.io.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Simple SSL chat client modified from .
  */
 public final class ChatClient {
-
+    static DataManager dataHelper =  new DataManager();
     static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8989"));
+    public static LinkedBlockingQueue<BaseMsg> msgLinkedBlockingQueue = new LinkedBlockingQueue<>();
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
@@ -52,23 +55,24 @@ public final class ChatClient {
 
             // Read commands from the stdin.
             ChannelFuture lastWriteFuture = null;
-            String aa = "aaaaa";
-            InputStream in_nocode   =   new ByteArrayInputStream(aa.getBytes());
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(in_nocode));
+            dataHelper.start();
             for (;;) {
-                String line = in.readLine();
-                if (line == null) {
+                System.out.println("=======循环=========");
+                BaseMsg baseMsg = msgLinkedBlockingQueue.take();
+                if (baseMsg == null) {
                     break;
                 }
 
                 // Sends the received line to the server.
-                lastWriteFuture = ch.writeAndFlush(line + "\r\n");
-
+                lastWriteFuture = ch.writeAndFlush(baseMsg);
+                System.out.println("send=========" + baseMsg.msgType);
                 // If user typed the 'bye' command, wait until the server closes
                 // the connection.
-                if ("bye".equals(line.toLowerCase())) {
+                if (MsgType.LOGOUT.equals(baseMsg.msgType)) {
+                    System.out.println("=======out=========");
                     ch.closeFuture().sync();
+                    dataHelper.stopThread();
                     break;
                 }
             }

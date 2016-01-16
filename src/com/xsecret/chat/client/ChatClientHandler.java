@@ -15,17 +15,51 @@
  */
 package com.xsecret.chat.client;
 
+import com.xsecret.chat.model.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 
 /**
  * Handles a client-side channel.
  */
-public class ChatClientHandler extends SimpleChannelInboundHandler<String> {
+public class ChatClientHandler extends SimpleChannelInboundHandler<BaseMsg> {
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent e = (IdleStateEvent) evt;
+            switch (e.state()) {
+                case WRITER_IDLE:
+                    PingMsg pingMsg=new PingMsg();
+                    ctx.writeAndFlush(pingMsg);
+                    System.out.println("send ping to server----------");
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        System.err.println(msg);
+    public void channelRead0(ChannelHandlerContext ctx, BaseMsg baseMsg) throws Exception {
+        String msgType=baseMsg.msgType;
+        switch (msgType){
+            case MsgType.LOGIN:{
+                //向服务器发起登录
+                LoginMsg loginMsg=new LoginMsg();
+                loginMsg.password = "yao";
+                loginMsg.userName = "robin";
+                ctx.writeAndFlush(loginMsg);
+            }break;
+            case MsgType.PING:{
+                System.out.println("receive ping from server----------");
+            }break;
+            case MsgType.SEND:{
+                System.out.println("收到："+baseMsg.clientId+"的消息"+((SendMsg)baseMsg).msgBody);
+            }break;
+            default:break;
+        }
     }
 
     @Override
