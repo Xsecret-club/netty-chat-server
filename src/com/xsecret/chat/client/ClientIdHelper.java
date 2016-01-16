@@ -6,7 +6,6 @@ package com.xsecret.chat.client;
 public class ClientIdHelper {
 
     private static String clientId = "pangff";
-    private static String clientIdChange = "shengxinlei";
 
     private static ClientIdHelper instance;
 
@@ -21,7 +20,7 @@ public class ClientIdHelper {
         return instance;
     }
     public static String getClientId(){
-        return clientIdChange;
+        return clientId;
     }
 
 }

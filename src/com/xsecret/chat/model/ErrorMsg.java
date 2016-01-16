@@ -6,7 +6,7 @@ package com.xsecret.chat.model;
 public class ErrorMsg extends BaseMsg {
 
     public ErrorMsg(){
-        this.errorMsg = MsgType.ERROR;
+        this.msgType = MsgType.ERROR;
     }
     public String errorMsg;
 

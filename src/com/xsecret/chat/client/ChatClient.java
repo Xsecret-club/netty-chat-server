@@ -34,7 +34,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public final class ChatClient {
     static DataManager dataHelper =  new DataManager();
-    static final String HOST = System.getProperty("host", "127.0.0.1");
+    static final String HOST = System.getProperty("host", "182.92.184.206");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8989"));
     public static LinkedBlockingQueue<BaseMsg> msgLinkedBlockingQueue = new LinkedBlockingQueue<>();
 
