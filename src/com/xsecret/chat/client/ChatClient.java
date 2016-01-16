@@ -25,8 +25,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 
 /**
  * Simple SSL chat client modified from .
@@ -53,7 +52,10 @@ public final class ChatClient {
 
             // Read commands from the stdin.
             ChannelFuture lastWriteFuture = null;
-            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+            String aa = "aaaaa";
+            InputStream in_nocode   =   new ByteArrayInputStream(aa.getBytes());
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(in_nocode));
             for (;;) {
                 String line = in.readLine();
                 if (line == null) {
