@@ -1,6 +1,6 @@
 package com.xsecret.chat.client;
 
-import com.xsecret.chat.model.*;
+import com.xsecret.chat.MsgProtocol;
 
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -9,46 +9,44 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class DataManager extends Thread {
 
+    private static LinkedBlockingQueue<MsgProtocol.MsgContent> msgueue = new LinkedBlockingQueue<>();
+    private static String toClientId = "pangff";
 
-    private static LinkedBlockingQueue<BaseMsg> msgueue = new LinkedBlockingQueue<>();
-    private static String toClientId = "shengxinlei";
     static {
-        LoginMsg loginMsg = new LoginMsg();
-        loginMsg.userName = "pangff";
-        loginMsg.password = "111111";
-        loginMsg.clientId = ClientIdHelper.getClientId();
-        msgueue.add(loginMsg);
+        MsgProtocol.MsgContent.Builder builder = MsgProtocol.MsgContent.newBuilder();
+        builder.setMsgType(MsgProtocol.MsgType.LOGIN)
+                .setClientId(ClientIdHelper.getClientId())
+                .setUserName("pangff")
+                .setUserPassword("111111");
+        msgueue.add(builder.build());
 
-        SendMsg sendMsg = new SendMsg();
-        sendMsg.msgBody = "hello";
-        sendMsg.toClientId = toClientId;
-        sendMsg.clientId = ClientIdHelper.getClientId();
-        msgueue.add(sendMsg);
+        builder.clear();
+        builder.setMsgType(MsgProtocol.MsgType.SEND)
+                .setClientId(ClientIdHelper.getClientId())
+                .setToClientId(toClientId)
+                .setToClientMsg("hello");
+        msgueue.add(builder.build());
 
-        SendMsg sendMsg2 = new SendMsg();
-        sendMsg2.msgBody = "hello===1";
-        sendMsg2.clientId = ClientIdHelper.getClientId();
-        sendMsg2.toClientId = toClientId;
-        msgueue.add(sendMsg2);
+        builder.clear();
+        builder.setMsgType(MsgProtocol.MsgType.SEND)
+                .setClientId(ClientIdHelper.getClientId())
+                .setToClientId(toClientId)
+                .setToClientMsg("hello111");
+        msgueue.add(builder.build());
 
-        SendMsg sendMsg3 = new SendMsg();
-        sendMsg3.msgBody = "hello===2";
-        sendMsg3.toClientId = toClientId;
-        sendMsg3.clientId = ClientIdHelper.getClientId();
-        msgueue.add(sendMsg3);
-
-
-        LogoutMsg logoutMsg = new LogoutMsg();
-        logoutMsg.clientId = ClientIdHelper.getClientId();
-        msgueue.add(logoutMsg);
+        builder.clear();
+        builder.setMsgType(MsgProtocol.MsgType.LOGOUT)
+                .setClientId(ClientIdHelper.getClientId());
+        msgueue.add(builder.build());
     }
 
     boolean stopFlag = false;
+
     @Override
     public void run() {
-        while (!stopFlag){
+        while (!stopFlag) {
             try {
-                BaseMsg baseMsg =  msgueue.take();
+                MsgProtocol.MsgContent baseMsg = msgueue.take();
                 ChatClient.msgLinkedBlockingQueue.add(baseMsg);
                 sleep(10000);
             } catch (InterruptedException e) {
@@ -57,7 +55,7 @@ public class DataManager extends Thread {
         }
     }
 
-    public void stopThread(){
+    public void stopThread() {
         stopFlag = true;
     }
 }

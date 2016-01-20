@@ -5,7 +5,8 @@ package com.xsecret.chat.client;
  */
 public class ClientIdHelper {
 
-    private static String clientId = "pangff";
+    private static String clientId = "shengxinlei";
+    private static String clientIdChange = "shengxinlei";
 
     private static ClientIdHelper instance;
 

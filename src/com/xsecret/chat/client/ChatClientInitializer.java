@@ -15,11 +15,16 @@
  */
 package com.xsecret.chat.client;
 
+import com.xsecret.chat.MsgProtocol;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.DelimiterBasedFrameDecoder;
 import io.netty.handler.codec.Delimiters;
+import io.netty.handler.codec.protobuf.ProtobufDecoder;
+import io.netty.handler.codec.protobuf.ProtobufEncoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
+import io.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
@@ -40,20 +45,26 @@ public class ChatClientInitializer extends ChannelInitializer<SocketChannel> {
 
     @Override
     public void initChannel(SocketChannel ch) throws Exception {
-        ChannelPipeline pipeline = ch.pipeline();
+        ChannelPipeline p = ch.pipeline();
 
         // Add SSL handler first to encrypt and decrypt everything.
         // In this example, we use a bogus certificate in the server side
         // and accept any invalid certificates in the client side.
         // You will need something more complicated to identify both
         // and server in the real world.
-        pipeline.addLast(sslCtx.newHandler(ch.alloc(), ChatClient.HOST, ChatClient.PORT));
+        p.addLast(sslCtx.newHandler(ch.alloc(), ChatClient.HOST, ChatClient.PORT));
 
         // On top of the SSL handler, add the text line codec.
-        pipeline.addLast(new ObjectEncoder());
-        pipeline.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
+        p.addLast(new ProtobufVarint32FrameDecoder());
+        p.addLast(new ProtobufDecoder(MsgProtocol.MsgContent.getDefaultInstance()));
+
+        p.addLast(new ProtobufVarint32LengthFieldPrepender());
+        p.addLast(new ProtobufEncoder());
+
+//        pipeline.addLast(new ObjectEncoder());
+//        pipeline.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(null)));
 
         // and then business logic.
-        pipeline.addLast(new ChatClientHandler());
+        p.addLast(new ChatClientHandler());
     }
 }

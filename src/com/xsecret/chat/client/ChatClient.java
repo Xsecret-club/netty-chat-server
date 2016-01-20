@@ -15,8 +15,7 @@
  */
 package com.xsecret.chat.client;
 
-import com.xsecret.chat.model.BaseMsg;
-import com.xsecret.chat.model.MsgType;
+import com.xsecret.chat.MsgProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -33,22 +32,22 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Simple SSL chat client modified from .
  */
 public final class ChatClient {
-    static DataManager dataHelper =  new DataManager();
-    static final String HOST = System.getProperty("host", "182.92.184.206");
+    static DataManager dataHelper = new DataManager();
+    static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8989"));
-    public static LinkedBlockingQueue<BaseMsg> msgLinkedBlockingQueue = new LinkedBlockingQueue<>();
+    public static LinkedBlockingQueue<MsgProtocol.MsgContent> msgLinkedBlockingQueue = new LinkedBlockingQueue<>();
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
         final SslContext sslCtx = SslContextBuilder.forClient()
-            .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
-             .channel(NioSocketChannel.class)
-             .handler(new ChatClientInitializer(sslCtx));
+                    .channel(NioSocketChannel.class)
+                    .handler(new ChatClientInitializer(sslCtx));
 
             // Start the connection attempt.
             Channel ch = b.connect(HOST, PORT).sync().channel();
@@ -57,24 +56,28 @@ public final class ChatClient {
             ChannelFuture lastWriteFuture = null;
 
             dataHelper.start();
-            for (;;) {
+            for (; ; ) {
                 System.out.println("=======循环=========");
-                BaseMsg baseMsg = msgLinkedBlockingQueue.take();
+                MsgProtocol.MsgContent baseMsg = msgLinkedBlockingQueue.take();
                 if (baseMsg == null) {
+                    break;
+                }
+                if (MsgProtocol.MsgType.LOGIN.equals(baseMsg.getMsgType())) {
+                    System.out.println("=======login=========");
+                }
+
+                // If user typed the 'bye' command, wait until the server closes
+                // the connection.
+                if (MsgProtocol.MsgType.LOGOUT.equals(baseMsg.getMsgType())) {
+                    System.out.println("=======logout=========");
+                    ch.closeFuture().sync();
+                    dataHelper.stopThread();
                     break;
                 }
 
                 // Sends the received line to the server.
                 lastWriteFuture = ch.writeAndFlush(baseMsg);
-                System.out.println("send=========" + baseMsg.msgType);
-                // If user typed the 'bye' command, wait until the server closes
-                // the connection.
-                if (MsgType.LOGOUT.equals(baseMsg.msgType)) {
-                    System.out.println("=======out=========");
-                    ch.closeFuture().sync();
-                    dataHelper.stopThread();
-                    break;
-                }
+                System.out.println(baseMsg.getMsgType() + " to " + baseMsg.getToClientId() + ": " + baseMsg.getToClientMsg());
             }
 
             // Wait until all messages are flushed before closing the channel.

@@ -15,24 +15,25 @@
  */
 package com.xsecret.chat.client;
 
-import com.xsecret.chat.model.*;
+import com.xsecret.chat.MsgProtocol;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.ReferenceCountUtil;
 
 /**
  * Handles a client-side channel.
  */
-public class ChatClientHandler extends SimpleChannelInboundHandler<BaseMsg> {
+public class ChatClientHandler extends SimpleChannelInboundHandler<MsgProtocol.MsgContent> {
+
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent e = (IdleStateEvent) evt;
             switch (e.state()) {
                 case WRITER_IDLE:
-                    PingMsg pingMsg=new PingMsg();
-                    ctx.writeAndFlush(pingMsg);
+                    MsgProtocol.MsgContent.Builder builder = MsgProtocol.MsgContent.newBuilder();
+                    builder.setMsgType(MsgProtocol.MsgType.PING);
+                    ctx.writeAndFlush(builder.build());
                     System.out.println("send ping to server----------");
                     break;
                 default:
@@ -42,23 +43,21 @@ public class ChatClientHandler extends SimpleChannelInboundHandler<BaseMsg> {
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, BaseMsg baseMsg) throws Exception {
-        String msgType=baseMsg.msgType;
-        switch (msgType){
-            case MsgType.LOGIN:{
-                //向服务器发起登录
-                LoginMsg loginMsg=new LoginMsg();
-                loginMsg.password = "yao";
-                loginMsg.userName = "robin";
-                ctx.writeAndFlush(loginMsg);
-            }break;
-            case MsgType.PING:{
-                System.out.println("receive ping from server----------");
-            }break;
-            case MsgType.SEND:{
-                System.out.println("收到："+baseMsg.clientId+"的消息"+((SendMsg)baseMsg).msgBody);
-            }break;
-            default:break;
+    public void channelRead0(ChannelHandlerContext ctx, MsgProtocol.MsgContent baseMsg) throws Exception {
+        MsgProtocol.MsgType msgType = baseMsg.getMsgType();
+        if (MsgProtocol.MsgType.LOGIN.equals(msgType)) {
+            //向服务器发起登录
+            MsgProtocol.MsgContent.Builder builder = MsgProtocol.MsgContent.newBuilder();
+            builder.setMsgType(MsgProtocol.MsgType.LOGIN)
+                    .setUserPassword("111111")
+                    .setUserName("pangff");
+            ctx.writeAndFlush(builder.build());
+        }
+        if (MsgProtocol.MsgType.PING.equals(msgType)) {
+            System.out.println("receive ping from server----------");
+        }
+        if (MsgProtocol.MsgType.SEND.equals(msgType)) {
+            System.out.println("收到：" + baseMsg.getClientId() + "的消息" + baseMsg.getToClientMsg());
         }
     }
 
