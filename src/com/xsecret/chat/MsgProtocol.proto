@@ -1,0 +1,21 @@
+package com.xsecret.chat;
+
+option optimize_for = SPEED;
+
+enum MsgType {
+    PING = 0;
+    LOGIN = 1;
+    LOGOUT = 2;
+    SEND = 3;
+    ERROR = 4;
+}
+
+message MsgContent {
+    required MsgType msgType = 1;
+    optional string clientId = 2;
+    optional string userName = 3;
+    optional string userPassword = 4;
+    optional string toClientId = 5;
+    optional string toClientMsg = 6;
+    optional string errorMsg = 7;
+}

@@ -15,6 +15,7 @@
  */
 package com.xsecret.chat.client;
 
+import com.xsecret.chat.MsgProtocol;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -25,51 +26,55 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
-import java.io.*;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Simple SSL chat client modified from .
  */
 public final class ChatClient {
-
     static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8989"));
+    public static LinkedBlockingQueue<MsgProtocol.MsgContent> msgLinkedBlockingQueue = new LinkedBlockingQueue<>();
 
     public static void main(String[] args) throws Exception {
         // Configure SSL.
         final SslContext sslCtx = SslContextBuilder.forClient()
-            .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+                .trustManager(InsecureTrustManagerFactory.INSTANCE).build();
 
         EventLoopGroup group = new NioEventLoopGroup();
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
-             .channel(NioSocketChannel.class)
-             .handler(new ChatClientInitializer(sslCtx));
+                    .channel(NioSocketChannel.class)
+                    .handler(new ChatClientInitializer(sslCtx));
 
             // Start the connection attempt.
             Channel ch = b.connect(HOST, PORT).sync().channel();
 
             // Read commands from the stdin.
             ChannelFuture lastWriteFuture = null;
-            String aa = "aaaaa";
-            InputStream in_nocode   =   new ByteArrayInputStream(aa.getBytes());
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(in_nocode));
-            for (;;) {
-                String line = in.readLine();
-                if (line == null) {
+            DataManager dataManager = new DataManager("shengxinlei", "pangff");
+            dataManager.start();
+            for (; ; ) {
+                System.out.println("=======循环=========");
+                MsgProtocol.MsgContent baseMsg = msgLinkedBlockingQueue.take();
+                if (baseMsg == null) {
                     break;
                 }
-
-                // Sends the received line to the server.
-                lastWriteFuture = ch.writeAndFlush(line + "\r\n");
-
-                // If user typed the 'bye' command, wait until the server closes
-                // the connection.
-                if ("bye".equals(line.toLowerCase())) {
+                if (MsgProtocol.MsgType.LOGIN.equals(baseMsg.getMsgType())) {
+                    System.out.println("=======login=========");
+                    // If user typed the 'bye' command, wait until the server closes
+                    // the connection.
+                } else if (MsgProtocol.MsgType.LOGOUT.equals(baseMsg.getMsgType())) {
+                    System.out.println("=======logout=========");
                     ch.closeFuture().sync();
+                    dataManager.stopThread();
                     break;
+                } else {
+                    // Sends the received line to the server.
+                    lastWriteFuture = ch.writeAndFlush(baseMsg);
+                    System.out.println(baseMsg.getMsgType() + " to " + baseMsg.getToClientId() + ": " + baseMsg.getToClientMsg());
                 }
             }
 
