@@ -9,50 +9,56 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class DataManager extends Thread {
 
-    private static LinkedBlockingQueue<MsgProtocol.MsgContent> msgueue = new LinkedBlockingQueue<>();
-    private static String toClientId = "pangff";
-
-    static {
-        MsgProtocol.MsgContent.Builder builder = MsgProtocol.MsgContent.newBuilder();
-        builder.setMsgType(MsgProtocol.MsgType.LOGIN)
-                .setClientId(ClientIdHelper.getClientId())
-                .setUserName("pangff")
-                .setUserPassword("111111");
-        msgueue.add(builder.build());
-
-        builder.clear();
-        builder.setMsgType(MsgProtocol.MsgType.SEND)
-                .setClientId(ClientIdHelper.getClientId())
-                .setToClientId(toClientId)
-                .setToClientMsg("hello");
-        msgueue.add(builder.build());
-
-        builder.clear();
-        builder.setMsgType(MsgProtocol.MsgType.SEND)
-                .setClientId(ClientIdHelper.getClientId())
-                .setToClientId(toClientId)
-                .setToClientMsg("hello111");
-        msgueue.add(builder.build());
-
-        builder.clear();
-        builder.setMsgType(MsgProtocol.MsgType.LOGOUT)
-                .setClientId(ClientIdHelper.getClientId());
-        msgueue.add(builder.build());
-    }
-
+    private LinkedBlockingQueue<MsgProtocol.MsgContent> msgQueue = new LinkedBlockingQueue<>();
+    private String clientId;
+    private String toClientId;
     boolean stopFlag = false;
+
+    DataManager(String clientId, String toClientId) {
+        this.clientId = clientId;
+        this.toClientId = toClientId;
+    }
 
     @Override
     public void run() {
         while (!stopFlag) {
             try {
-                MsgProtocol.MsgContent baseMsg = msgueue.take();
+                initMsgQueue();
+                MsgProtocol.MsgContent baseMsg = msgQueue.take();
                 ChatClient.msgLinkedBlockingQueue.add(baseMsg);
                 sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
+    }
+
+    private void initMsgQueue() {
+        MsgProtocol.MsgContent.Builder builder = MsgProtocol.MsgContent.newBuilder();
+        builder.setMsgType(MsgProtocol.MsgType.LOGIN)
+                .setClientId(ClientIdHelper.getClientId())
+                .setUserName("pangff")
+                .setUserPassword("111111");
+        msgQueue.add(builder.build());
+
+        builder.clear();
+        builder.setMsgType(MsgProtocol.MsgType.SEND)
+                .setClientId(clientId)
+                .setToClientId(toClientId)
+                .setToClientMsg("hello");
+        msgQueue.add(builder.build());
+
+        builder.clear();
+        builder.setMsgType(MsgProtocol.MsgType.SEND)
+                .setClientId(clientId)
+                .setToClientId(toClientId)
+                .setToClientMsg("hello111");
+        msgQueue.add(builder.build());
+
+        builder.clear();
+        builder.setMsgType(MsgProtocol.MsgType.LOGOUT)
+                .setClientId(clientId);
+        msgQueue.add(builder.build());
     }
 
     public void stopThread() {

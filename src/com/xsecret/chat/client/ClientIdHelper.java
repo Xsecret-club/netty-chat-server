@@ -6,13 +6,11 @@ package com.xsecret.chat.client;
 public class ClientIdHelper {
 
     private static String clientId = "shengxinlei";
-    private static String clientIdChange = "shengxinlei";
+    private static String clientIdChange = "pangff";
 
     private static ClientIdHelper instance;
 
-    private ClientIdHelper(){
-        clientId = clientId;
-    }
+    private ClientIdHelper(){}
 
     public static ClientIdHelper getInstance(){
         if(instance == null){

@@ -32,7 +32,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Simple SSL chat client modified from .
  */
 public final class ChatClient {
-    static DataManager dataHelper = new DataManager();
     static final String HOST = System.getProperty("host", "127.0.0.1");
     static final int PORT = Integer.parseInt(System.getProperty("port", "8989"));
     public static LinkedBlockingQueue<MsgProtocol.MsgContent> msgLinkedBlockingQueue = new LinkedBlockingQueue<>();
@@ -55,7 +54,8 @@ public final class ChatClient {
             // Read commands from the stdin.
             ChannelFuture lastWriteFuture = null;
 
-            dataHelper.start();
+            DataManager dataManager = new DataManager("shengxinlei", "pangff");
+            dataManager.start();
             for (; ; ) {
                 System.out.println("=======循环=========");
                 MsgProtocol.MsgContent baseMsg = msgLinkedBlockingQueue.take();
@@ -64,20 +64,18 @@ public final class ChatClient {
                 }
                 if (MsgProtocol.MsgType.LOGIN.equals(baseMsg.getMsgType())) {
                     System.out.println("=======login=========");
-                }
-
-                // If user typed the 'bye' command, wait until the server closes
-                // the connection.
-                if (MsgProtocol.MsgType.LOGOUT.equals(baseMsg.getMsgType())) {
+                    // If user typed the 'bye' command, wait until the server closes
+                    // the connection.
+                } else if (MsgProtocol.MsgType.LOGOUT.equals(baseMsg.getMsgType())) {
                     System.out.println("=======logout=========");
                     ch.closeFuture().sync();
-                    dataHelper.stopThread();
+                    dataManager.stopThread();
                     break;
+                } else {
+                    // Sends the received line to the server.
+                    lastWriteFuture = ch.writeAndFlush(baseMsg);
+                    System.out.println(baseMsg.getMsgType() + " to " + baseMsg.getToClientId() + ": " + baseMsg.getToClientMsg());
                 }
-
-                // Sends the received line to the server.
-                lastWriteFuture = ch.writeAndFlush(baseMsg);
-                System.out.println(baseMsg.getMsgType() + " to " + baseMsg.getToClientId() + ": " + baseMsg.getToClientMsg());
             }
 
             // Wait until all messages are flushed before closing the channel.
