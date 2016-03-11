@@ -1,3 +1,5 @@
+namespace com.xsecret.chat
+
 enum eType {
     PING = 0;
     LOGIN = 1;
